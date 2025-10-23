@@ -2,23 +2,31 @@
 
 import type { AppProps } from 'next/app';
 import React, { useEffect } from 'react';
-import dynamic from 'next/dynamic';
-
-// --- BAGIAN INISIALISASI WEB3MODAL (Perlu berjalan di sisi klien saja) ---
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers/react';
-// import '../styles/globals.css'; // Pastikan Anda mengimpor CSS global Anda
+// import '../styles/globals.css'; // Jangan lupa uncomment jika Anda menggunakan global CSS
 
-// 1. Definisikan Project ID dan Jaringan
+// --- KONFIGURASI JARINGAN BASE DAN CELO (MAINNET) ---
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
 
-const arbitrumSepolia = {
-  chainId: 421614,
-  name: 'Arbitrum Sepolia',
+// 1. Konfigurasi Base Mainnet
+const baseMainnet = {
+  chainId: 8453,
+  name: 'Base Mainnet',
   currency: 'ETH',
-  explorerUrl: 'https://sepolia.arbiscan.io/',
-  rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc',
+  explorerUrl: 'https://base.blockscout.com/',
+  rpcUrl: 'https://mainnet.base.org', 
 };
 
+// 2. Konfigurasi Celo Mainnet
+const celoMainnet = {
+  chainId: 42220,
+  name: 'Celo Mainnet',
+  currency: 'CELO',
+  explorerUrl: 'https://celoscan.io',
+  rpcUrl: 'https://forno.celo.org',
+};
+
+// 3. Metadata aplikasi (Sama seperti sebelumnya)
 const metadata = {
   name: 'S3ntiment Voting App',
   description: 'Decentralized voting platform',
@@ -26,14 +34,19 @@ const metadata = {
   icons: ['https://avatars.githubusercontent.com/u/37784886'] 
 };
 
-const chains = [arbitrumSepolia];
+// Daftarkan kedua chain
+const chains = [baseMainnet, celoMainnet];
+
+// Atur Base sebagai chain default
 const ethersConfig = defaultConfig({
   metadata,
-  defaultChainId: 421614,
-  rpcUrl: arbitrumSepolia.rpcUrl
+  defaultChainId: 8453, // Default ke Base
+  rpcUrl: baseMainnet.rpcUrl
 });
 
-// Fungsi inisialisasi
+
+// --- INISIALISASI WEB3MODAL ---
+
 const modalInit = () => {
   if (projectId) {
       createWeb3Modal({
@@ -48,20 +61,17 @@ const modalInit = () => {
   }
 }
 
-// Komponen Pembungkus yang Menginisialisasi Modal
+// Komponen Pembungkus yang Menginisialisasi Modal HANYA di sisi klien (untuk mencegah crash SSR)
 const Web3ModalInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Inisialisasi modal HANYA di sisi klien (setelah DOM siap)
     useEffect(() => {
         modalInit();
     }, []);
-
     return <>{children}</>;
 };
 
-// --- BAGIAN APLIKASI NEXT.JS UTAMA ---
+// --- APLIKASI UTAMA ---
 
 function MyApp({ Component, pageProps }: AppProps) {
-  // Pembungkus ini memastikan Web3Modal diinisialisasi hanya sekali
   return (
     <Web3ModalInitializer>
       <Component {...pageProps} />
