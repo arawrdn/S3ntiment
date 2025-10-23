@@ -1,16 +1,23 @@
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
 import type { AppProps } from 'next/app';
-// Catatan: Impor CSS ini dinonaktifkan sementara. Aktifkan kembali jika build Vercel sudah berhasil.
 // import '../styles/globals.css'; 
 
-// 1. Project ID (Mengambil dari Environment Variable NEXT_PUBLIC_PROJECT_ID)
+// 1. Project ID (Retrieved from Next.js Environment Variable)
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID; 
 
 if (!projectId) {
-  console.error("NEXT_PUBLIC_PROJECT_ID tidak diatur. WalletConnect tidak akan berfungsi.");
+  console.error("NEXT_PUBLIC_PROJECT_ID is not set. WalletConnect will not function.");
 }
 
-// 2. Definisi Rantai (Chains): Base dan Celo
+// 2. Define Metadata (Global Sentiment Description)
+const metadata = {
+  name: 'S3ntiment',
+  description: 'Connect to S3ntiment: Global Crypto Sentiment Analysis Platform.', // <--- DESKRIPSI GLOBAL
+  url: 'https://s3ntiment.vercel.app',
+  icons: ['https://avatars.githubusercontent.com/u/37784886'],
+};
+
+// 3. Chain Definitions: ONLY BASE and CELO
 const base = {
   chainId: 8453,
   name: 'Base',
@@ -27,25 +34,18 @@ const celo = {
   rpcUrl: 'https://forno.celo.org',
 };
 
+// Hanya menyertakan Base dan Celo
 const chains = [base, celo]; 
 
-// 3. Metadata Proyek
-const metadata = defaultConfig({
-  name: 'S3ntiment',
-  description: 'Aplikasi Sentimen Base & Celo',
-  url: 'https://s3ntiment.vercel.app',
-  icons: ['https://avatars.githubusercontent.com/u/37784886'],
-});
-
-// 4. Konfigurasi Ethers
-const ethersConfig = {
-  metadata,
+// 4. Ethers Configuration
+const ethersConfig = defaultConfig({
+  metadata: metadata,
   enableEIP6963: true,
   defaultChainId: 8453, // Default ke Base
   rpcUrl: base.rpcUrl, 
-};
+});
 
-// Inisialisasi Modal (Hanya berjalan di sisi klien)
+// Initialize Modal (Runs only once on the client-side)
 if (typeof window !== 'undefined' && projectId) {
   createWeb3Modal({
     ethersConfig,
@@ -55,7 +55,7 @@ if (typeof window !== 'undefined' && projectId) {
   });
 }
 
-// Komponen Root Next.js
+// Next.js Root Component
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <Component {...pageProps} />
