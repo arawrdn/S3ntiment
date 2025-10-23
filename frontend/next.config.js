@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
+  swcMinify: false, // disable SWC di Termux
   // supaya folder public/themes bisa diakses langsung
   // misal fetch('/themes/themes_oct.json')
   assetPrefix: "",
