@@ -1,0 +1,10 @@
+[
+  { "date": "2025-10-24", "question": "Who's going to moon next?", "options": ["DOGE", "PEPE", "Fartcoin"] },
+  { "date": "2025-10-25", "question": "Which chain will dominate Q4?", "options": ["Base", "Optimism", "Arbitrum", "Solana"] },
+  { "date": "2025-10-26", "question": "Best NFT community vibe right now?", "options": ["Pudgy Penguins", "Azuki", "Milady", "DeGods"] },
+  { "date": "2025-10-27", "question": "Will Bitcoin hit 100k this year?", "options": ["Yes", "No", "Already priced in"] },
+  { "date": "2025-10-28", "question": "Which DeFi protocol feels safest?", "options": ["Aave", "Uniswap", "Curve", "Lido"] },
+  { "date": "2025-10-29", "question": "Is ETH gas still too high?", "options": ["Way too high", "Acceptable now", "L2s fixed it"] },
+  { "date": "2025-10-30", "question": "Scariest crypto moment this year?", "options": ["FTX flashbacks", "SEC crackdowns", "Rug pulls", "Market dumps"] },
+  { "date": "2025-10-31", "question": "Spookiest blockchain ghost chain?", "options": ["EOS", "TRON", "Cardano", "Fantom"] }
+]
