@@ -1,27 +1,34 @@
-import { useState } from "react";
-import WalletConnect from "@walletconnect/client";
-import QRCodeModal from "@walletconnect/qrcode-modal";
+// frontend/hooks/useWalletConnect.ts (Diperbaiki untuk Web3Modal V3)
+
+import { useWeb3ModalAccount, useWeb3ModalProvider, useWeb3Modal } from '@web3modal/ethers/react';
+import { BrowserProvider } from 'ethers';
 
 export const useWalletConnect = () => {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [connector, setConnector] = useState<any>(null);
+    // Hook V3 untuk mendapatkan status koneksi dan alamat
+    const { address, isConnected, chainId } = useWeb3ModalAccount();
+    const { walletProvider } = useWeb3ModalProvider();
+    
+    // Hook V3 untuk membuka modal saat tombol diklik
+    const { open } = useWeb3Modal();
 
-  const connectWallet = async () => {
-    const wc = new WalletConnect({ bridge: "https://bridge.walletconnect.org" });
-    setConnector(wc);
+    let connector: any = null;
 
-    if (!wc.connected) {
-      await wc.createSession();
-      QRCodeModal.open(wc.uri, () => {});
+    if (isConnected && walletProvider) {
+        // walletProvider dari V3 adalah konektor EIP-1193 yang diperlukan oleh useVoteManager
+        connector = walletProvider;
     }
 
-    wc.on("connect", (error: any, payload: any) => {
-      if (error) throw error;
-      const { accounts } = payload.params[0];
-      setWalletAddress(accounts[0]);
-      QRCodeModal.close();
-    });
-  };
+    // Fungsi untuk memicu koneksi modal V3
+    const connectWallet = async () => {
+        // open() dari V3 menggantikan logic V1 createSession & QRCodeModal.open
+        await open(); 
+    };
 
-  return { walletAddress, connectWallet, connector };
+    return { 
+        walletAddress: address, // address dari V3
+        connectWallet,         // fungsi koneksi baru V3
+        connector,             // connector baru V3 untuk useVoteManager
+        isConnected,           // status koneksi
+        chainId,               // chain ID
+    };
 };
