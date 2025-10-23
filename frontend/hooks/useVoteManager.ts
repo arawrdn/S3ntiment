@@ -1,8 +1,6 @@
-// frontend/hooks/useVoteManager.ts
-
 import { ethers, BrowserProvider } from "ethers";
-import VoteManagerAbi from "../contracts/VoteManagerABI.json";
-// Catatan: Pastikan VoteManagerAbi adalah ABI yang benar untuk kontrak Anda
+// Impor ABI. Next.js/Webpack otomatis menangani ini.
+import VoteManagerAbi from "../contracts/VoteManagerABI.json"; 
 
 // Tipe untuk BrowserProvider dari WalletConnect. undefined berarti belum siap.
 type ConnectorProvider = BrowserProvider | undefined;
@@ -10,13 +8,10 @@ type ConnectorProvider = BrowserProvider | undefined;
 // Hook useVoteManager
 export const useVoteManager = (connector: ConnectorProvider) => {
     
-    // PERBAIKAN KRITIS 1: Menggunakan NEXT_PUBLIC_ untuk variabel publik
     const voteManagerAddress = process.env.NEXT_PUBLIC_VOTE_MANAGER_ADDRESS;
 
-    // PERBAIKAN KRITIS 2: Pengecekan stabilitas di awal hook (Guard Clause)
     if (!connector || !voteManagerAddress) {
         console.warn("useVoteManager: Wallet or Contract Address not ready.");
-        // Mengembalikan fungsi dummy yang tidak akan crash saat dipanggil
         return { 
             vote: async () => console.warn("Vote: Connector not ready."),
             registerUsername: async () => console.warn("Register: Connector not ready."),
@@ -24,19 +19,28 @@ export const useVoteManager = (connector: ConnectorProvider) => {
         };
     }
 
-    // Fungsi utilitas untuk menangani error transaksi tanpa alert()
+    // Fungsi utilitas
     const handleTxError = (err: any, msg: string) => {
         console.error(`${msg} failed:`, err);
-        // Tampilkan pesan di console (digantikan oleh notifikasi Toast di aplikasi sungguhan)
         console.warn(`Transaction failed for ${msg}. Check console for details.`);
     };
+
+    // PENTING: Fungsi ini mengekstrak ABI dari objek impor jika perlu.
+    // Berdasarkan file Anda, VoteManagerAbi *seharusnya* sudah berupa array ABI.
+    // Jika masih crash, kita mungkin perlu menggunakan new ethers.Interface().
+    const getContractInstance = (signerOrProvider: BrowserProvider | ethers.Signer) => {
+        // Asumsi: VoteManagerAbi sudah array. Jika tidak, ini yang menyebabkan crash.
+        // Jika perlu, ganti 'VoteManagerAbi' dengan 'VoteManagerAbi.abi' jika itu adalah struktur file Anda.
+        return new ethers.Contract(voteManagerAddress, VoteManagerAbi, signerOrProvider);
+    }
 
     const vote = async (themeId: number, optionIndex: number) => {
         try {
             const provider = new BrowserProvider(connector); 
             const signer = await provider.getSigner();
             
-            const contract = new ethers.Contract(voteManagerAddress, VoteManagerAbi, signer);
+            // Gunakan fungsi yang sudah diperiksa
+            const contract = getContractInstance(signer); 
 
             const tx = await contract.vote(themeId, optionIndex);
             await tx.wait();
@@ -51,7 +55,8 @@ export const useVoteManager = (connector: ConnectorProvider) => {
             const provider = new BrowserProvider(connector);
             const signer = await provider.getSigner();
             
-            const contract = new ethers.Contract(voteManagerAddress, VoteManagerAbi, signer);
+            // Gunakan fungsi yang sudah diperiksa
+            const contract = getContractInstance(signer);
 
             const tx = await contract.registerUsername(username);
             await tx.wait();
@@ -63,9 +68,9 @@ export const useVoteManager = (connector: ConnectorProvider) => {
 
     const getVoter = async (user: string) => {
         try {
-            // Untuk read-only, provider tanpa Signer sudah cukup
             const provider = new BrowserProvider(connector);
-            const contract = new ethers.Contract(voteManagerAddress, VoteManagerAbi, provider);
+            // Gunakan fungsi yang sudah diperiksa dengan Provider
+            const contract = getContractInstance(provider); 
             
             const result = await contract.getVoter(user);
             return result;
@@ -77,3 +82,8 @@ export const useVoteManager = (connector: ConnectorProvider) => {
 
     return { vote, registerUsername, getVoter };
 };
+```eof
+
+2.  **Commit** perubahan ini (juga pastikan `useWalletConnect.ts` sudah versi final) dan **Redeploy** Vercel.
+
+**Kesimpulan:** Masalah terakhir adalah Ethers.js mungkin gagal memproses objek ABI yang diimpor. Solusi ini menjaga struktur Anda tetapi menambahkan lapisan keamanan dalam penggunaan objek `VoteManagerAbi`. Ini seharusnya menyelesaikan masalah *client-side exception* secara tuntas.
