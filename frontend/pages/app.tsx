@@ -1,5 +1,6 @@
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
 import type { AppProps } from 'next/app';
+// Note: CSS import is commented out as it might cause resolution errors in the build environment.
 // import '../styles/globals.css'; 
 
 // 1. Project ID (Retrieved from Next.js Environment Variable)
@@ -12,12 +13,12 @@ if (!projectId) {
 // 2. Define Metadata (Global Sentiment Description)
 const metadata = {
   name: 'S3ntiment',
-  description: 'Connect to S3ntiment: Global Crypto Sentiment Analysis Platform.', // <--- DESKRIPSI GLOBAL
+  description: 'Connect to S3ntiment: Global Crypto Sentiment Analysis Platform.', 
   url: 'https://s3ntiment.vercel.app',
   icons: ['https://avatars.githubusercontent.com/u/37784886'],
 };
 
-// 3. Chain Definitions: ONLY BASE and CELO
+// 3. Chain Definitions: BASE and CELO
 const base = {
   chainId: 8453,
   name: 'Base',
@@ -34,14 +35,14 @@ const celo = {
   rpcUrl: 'https://forno.celo.org',
 };
 
-// Hanya menyertakan Base dan Celo
+// Only include Base and Celo
 const chains = [base, celo]; 
 
 // 4. Ethers Configuration
 const ethersConfig = defaultConfig({
   metadata: metadata,
   enableEIP6963: true,
-  defaultChainId: 8453, // Default ke Base
+  defaultChainId: 8453, // Default to Base
   rpcUrl: base.rpcUrl, 
 });
 
