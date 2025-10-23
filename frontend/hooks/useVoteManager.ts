@@ -1,89 +1,131 @@
-import { ethers, BrowserProvider } from "ethers";
-// Impor ABI. Next.js/Webpack otomatis menangani ini.
-import VoteManagerAbi from "../contracts/VoteManagerABI.json"; 
+import { Contract, BrowserProvider, type Eip1193Provider } from 'ethers';
+import { useWeb3ModalProvider } from '@web3modal/ethers/react';
+import { useState, useCallback, useMemo } from 'react';
 
-// Tipe untuk BrowserProvider dari WalletConnect. undefined berarti belum siap.
-type ConnectorProvider = BrowserProvider | undefined;
+// ABI untuk Contract VoteManager (gunakan ABI Anda yang sebenarnya)
+const VOTE_MANAGER_ABI = [
+    "function registerUsername(string calldata _username)",
+    "function vote(uint256 _themeId, uint256 _optionIndex)",
+    "function getVoter(address _voter) view returns (tuple(string username, uint256[] votes) profile)",
+    "function getTheme(uint256 _themeId) view returns (string name, string[] options, uint256[] voteCounts)",
+    // ... tambahkan fungsi-fungsi lain yang diperlukan
+];
 
-// Hook useVoteManager
-export const useVoteManager = (connector: ConnectorProvider) => {
+// Alamat Kontrak VoteManager
+// Pastikan variabel ini diset di Vercel atau file .env
+const contractAddress = process.env.NEXT_PUBLIC_VOTE_MANAGER_ADDRESS;
+
+/**
+ * Hook untuk berinteraksi dengan smart contract VoteManager.
+ * @param connector Ini adalah Eip1193Provider dari Web3Modal.
+ */
+export const useVoteManager = () => {
+    // Web3Modal v3 (Reown AppKit) menggunakan hook ini
+    const { walletProvider } = useWeb3ModalProvider();
     
-    const voteManagerAddress = process.env.NEXT_PUBLIC_VOTE_MANAGER_ADDRESS;
+    // State untuk menyimpan data atau error yang relevan
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    if (!connector || !voteManagerAddress) {
-        console.warn("useVoteManager: Wallet or Contract Address not ready.");
-        return { 
-            vote: async () => console.warn("Vote: Connector not ready."),
-            registerUsername: async () => console.warn("Register: Connector not ready."),
-            getVoter: async () => ({ address: undefined, points: 0, username: "" }),
-        };
-    }
+    // Instance Contract dan Provider dibuat ulang jika walletProvider berubah
+    const { contract, provider } = useMemo(() => {
+        if (!walletProvider || !contractAddress) {
+            return { contract: null, provider: null };
+        }
 
-    // Fungsi utilitas
-    const handleTxError = (err: any, msg: string) => {
-        console.error(`${msg} failed:`, err);
-        console.warn(`Transaction failed for ${msg}. Check console for details.`);
-    };
-
-    // PENTING: Fungsi ini mengekstrak ABI dari objek impor jika perlu.
-    // Berdasarkan file Anda, VoteManagerAbi *seharusnya* sudah berupa array ABI.
-    // Jika masih crash, kita mungkin perlu menggunakan new ethers.Interface().
-    const getContractInstance = (signerOrProvider: BrowserProvider | ethers.Signer) => {
-        // Asumsi: VoteManagerAbi sudah array. Jika tidak, ini yang menyebabkan crash.
-        // Jika perlu, ganti 'VoteManagerAbi' dengan 'VoteManagerAbi.abi' jika itu adalah struktur file Anda.
-        return new ethers.Contract(voteManagerAddress, VoteManagerAbi, signerOrProvider);
-    }
-
-    const vote = async (themeId: number, optionIndex: number) => {
         try {
-            const provider = new BrowserProvider(connector); 
+            // FIX TYPING: Lakukan type assertion (as Eip1193Provider) untuk mengatasi error TypeScript.
+            const ethersProvider = new BrowserProvider(walletProvider as Eip1193Provider);
+
+            const voteContract = new Contract(
+                contractAddress,
+                VOTE_MANAGER_ABI,
+                ethersProvider // Provider baca saja
+            );
+
+            return { contract: voteContract, provider: ethersProvider };
+        } catch (e) {
+            console.error("Failed to initialize contract or provider:", e);
+            return { contract: null, provider: null };
+        }
+    }, [walletProvider]);
+
+    // Fungsi untuk mendaftarkan Username
+    const registerUsername = useCallback(async (username: string) => {
+        if (!contract || !provider) return;
+        setLoading(true);
+        setError(null);
+        try {
+            // Dapatkan signer untuk mengirim transaksi (menulis data)
             const signer = await provider.getSigner();
+            const contractWithSigner = contract.connect(signer);
             
-            // Gunakan fungsi yang sudah diperiksa
-            const contract = getContractInstance(signer); 
-
-            const tx = await contract.vote(themeId, optionIndex);
+            const tx = await contractWithSigner.registerUsername(username);
             await tx.wait();
-            console.log("Vote submitted successfully!");
-        } catch (err) {
-            handleTxError(err, "Vote submission");
+            
+            alert("Username berhasil didaftarkan!");
+        } catch (e: any) {
+            console.error("Register username failed:", e);
+            setError(e.message || "Gagal mendaftarkan username.");
+        } finally {
+            setLoading(false);
         }
-    };
+    }, [contract, provider]);
 
-    const registerUsername = async (username: string) => {
+
+    // Fungsi untuk melakukan Voting
+    const vote = useCallback(async (themeId: number, optionIndex: number) => {
+        if (!contract || !provider) return;
+        setLoading(true);
+        setError(null);
         try {
-            const provider = new BrowserProvider(connector);
+            // Dapatkan signer
             const signer = await provider.getSigner();
+            const contractWithSigner = contract.connect(signer);
             
-            // Gunakan fungsi yang sudah diperiksa
-            const contract = getContractInstance(signer);
-
-            const tx = await contract.registerUsername(username);
+            // Panggil fungsi vote
+            const tx = await contractWithSigner.vote(themeId, optionIndex);
             await tx.wait();
-            console.log("Username registered successfully!");
-        } catch (err) {
-            handleTxError(err, "Username registration");
-        }
-    };
-
-    const getVoter = async (user: string) => {
-        try {
-            const provider = new BrowserProvider(connector);
-            // Gunakan fungsi yang sudah diperiksa dengan Provider
-            const contract = getContractInstance(provider); 
             
-            const result = await contract.getVoter(user);
-            return result;
-        } catch (err) {
-            console.error("Failed to get voter data:", err);
-            return { address: user, points: 0, username: "Error" };
+            alert("Vote berhasil dikirim!");
+        } catch (e: any) {
+            console.error("Voting failed:", e);
+            setError(e.message || "Gagal mengirim vote.");
+        } finally {
+            setLoading(false);
         }
-    };
+    }, [contract, provider]);
 
-    return { vote, registerUsername, getVoter };
+
+    // Fungsi untuk mendapatkan detail Voter
+    const getVoter = useCallback(async (voterAddress: string) => {
+        if (!contract) return null;
+        try {
+            const profile = await contract.getVoter(voterAddress);
+            return profile;
+        } catch (e) {
+            console.error("Failed to get voter profile:", e);
+            return null;
+        }
+    }, [contract]);
+
+    // ... Anda dapat menambahkan fungsi getTheme di sini
+    
+    // Kembalikan semua fungsi dan state
+    return {
+        registerUsername,
+        vote,
+        getVoter,
+        loading,
+        error,
+        isConnected: !!walletProvider // Menunjukkan apakah dompet terhubung
+    };
 };
 ```eof
 
-2.  **Commit** perubahan ini (juga pastikan `useWalletConnect.ts` sudah versi final) dan **Redeploy** Vercel.
+**Perubahan Kunci:**
 
-**Kesimpulan:** Masalah terakhir adalah Ethers.js mungkin gagal memproses objek ABI yang diimpor. Solusi ini menjaga struktur Anda tetapi menambahkan lapisan keamanan dalam penggunaan objek `VoteManagerAbi`. Ini seharusnya menyelesaikan masalah *client-side exception* secara tuntas.
+Baris ini adalah perbaikan *type* yang spesifik untuk `ethers.js` dan Web3Modal:
+
+```typescript
+const ethersProvider = new BrowserProvider(walletProvider as Eip1193Provider);
