@@ -1,9 +1,5 @@
-import { ethers, BrowserProvider } from "ethers"; // ⬅️ PERUBAHAN 1: Import BrowserProvider
+import { ethers, BrowserProvider } from "ethers"; // ⬅️ PERBAIKAN 1
 import VoteManagerAbi from "../contracts/VoteManagerABI.json";
-
-// Catatan: Karena Anda menggunakan TypeScript, idealnya Anda harus menentukan tipe 
-// yang lebih spesifik untuk 'connector', seperti 'Provider' dari Ethers v6.
-// Untuk saat ini, kita biarkan 'any' agar fokus pada perbaikan sintaks.
 
 export const useVoteManager = (connector: any) => {
   const voteManagerAddress = process.env.VOTE_MANAGER_ADDRESS!;
@@ -11,9 +7,11 @@ export const useVoteManager = (connector: any) => {
   const vote = async (themeId: number, optionIndex: number) => {
     if (!connector) return alert("Wallet not connected");
     
-    // ⬅️ PERUBAHAN 2: Ganti ethers.providers.Web3Provider menjadi BrowserProvider
-    const provider = new BrowserProvider(connector);
-    const signer = await provider.getSigner(); // ⬅️ PERUBAHAN 3: getSigner() sekarang harus di-await
+    // ⬅️ PERBAIKAN 2
+    const provider = new BrowserProvider(connector); 
+    
+    // ⬅️ PERBAIKAN 3
+    const signer = await provider.getSigner(); 
     
     const contract = new ethers.Contract(voteManagerAddress, VoteManagerAbi, signer);
 
@@ -30,9 +28,11 @@ export const useVoteManager = (connector: any) => {
   const registerUsername = async (username: string) => {
     if (!connector) return alert("Wallet not connected");
     
-    // ⬅️ PERUBAHAN 4
-    const provider = new BrowserProvider(connector);
-    const signer = await provider.getSigner(); // ⬅️ PERUBAHAN 5
+    // ⬅️ PERBAIKAN 2
+    const provider = new BrowserProvider(connector); 
+    
+    // ⬅️ PERBAIKAN 3
+    const signer = await provider.getSigner(); 
     
     const contract = new ethers.Contract(voteManagerAddress, VoteManagerAbi, signer);
 
@@ -49,22 +49,12 @@ export const useVoteManager = (connector: any) => {
   const getVoter = async (user: string) => {
     if (!connector) return null;
     
-    // ⬅️ PERUBAHAN 6: Cukup menggunakan BrowserProvider untuk read-only
+    // ⬅️ PERBAIKAN 2 (Hanya perlu untuk read-only)
     const provider = new BrowserProvider(connector); 
     
-    // Catatan: Jika ini adalah read-only (tanpa interaksi user), 
-    // Anda mungkin ingin menggunakan JsonRpcProvider dengan RPC URL Base/Celo yang spesifik.
-    // Namun, untuk sementara, BrowserProvider ini akan berfungsi untuk read-only.
-    
     const contract = new ethers.Contract(voteManagerAddress, VoteManagerAbi, provider);
-    
-    try {
-        const result = await contract.getVoter(user);
-        return result; // [username, totalPoints]
-    } catch (err) {
-        console.error("Error fetching voter:", err);
-        return null;
-    }
+    const result = await contract.getVoter(user);
+    return result; 
   };
 
   return { vote, registerUsername, getVoter };
