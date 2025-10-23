@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* tambahan style spesifik untuk blur panel */
+.blur-panel {
+  backdrop-filter: blur(10px);
+  background-color: rgba(0,0,0,0.3);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
